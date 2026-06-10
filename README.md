@@ -1,98 +1,170 @@
-# ATM Transaction Dashboard 🏧
+# 🏧 ATM Transaction Dashboard
 
-A full-stack analytics dashboard for Bank of Baroda ATM operations across Northeast India — built with a Python Flask REST API backend and a Chart.js frontend.
+<div align="center">
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-blue?style=for-the-badge&logo=github)](https://nestorniloy.github.io/atm-transaction-dashboard/Web%20dashboard/atm-dashboard.html)
-[![Python](https://img.shields.io/badge/Python-3.13-yellow?style=for-the-badge&logo=python)](https://python.org)
-[![Flask](https://img.shields.io/badge/Flask-3.1-black?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com)
-[![Chart.js](https://img.shields.io/badge/Chart.js-4.4-pink?style=for-the-badge&logo=chart.js)](https://chartjs.org)
+**A full-stack analytics dashboard for Bank of Baroda ATM operations across Northeast India**
+
+[![Live Dashboard](https://img.shields.io/badge/🚀%20Live%20Dashboard-GitHub%20Pages-2ea44f?style=for-the-badge)](https://nestorniloy.github.io/atm-transaction-dashboard/Web%20dashboard/atm-dashboard.html)
+[![Live API](https://img.shields.io/badge/⚙️%20Live%20API-Render-4fc3f7?style=for-the-badge)](https://atm-dashboard-api.onrender.com)
+[![GitHub](https://img.shields.io/badge/Source%20Code-GitHub-181717?style=for-the-badge&logo=github)](https://github.com/nestorNiloy/atm-transaction-dashboard)
+
+![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-3.1-000000?style=flat-square&logo=flask&logoColor=white)
+![Chart.js](https://img.shields.io/badge/Chart.js-4.4-FF6384?style=flat-square&logo=chart.js&logoColor=white)
+![Pandas](https://img.shields.io/badge/Pandas-2.0-150458?style=flat-square&logo=pandas&logoColor=white)
+![Render](https://img.shields.io/badge/Deployed-Render-46E3B7?style=flat-square)
+![GitHub Pages](https://img.shields.io/badge/Hosted-GitHub%20Pages-222222?style=flat-square&logo=github)
+
+</div>
 
 ---
 
-![ATM Transaction Dashboard Screenshot](Dashboard%20screenshot.png)
+![ATM Dashboard Demo](demo.gif)
 
 ---
 
-## Overview
+## 📌 Overview
 
-This dashboard visualises ATM performance data across **11 states in Northeast India**, covering **2,790 ATMs** and **11,076 transaction records** from FY 2024. It includes live filtering by state, month, and ATM type — all powered by a REST API backend.
+This project visualises ATM performance data across **11 states in Northeast India**, covering **2,790 ATMs** and **11,076 transaction records** from FY 2024.
 
-## Tech Stack
+The frontend is hosted on **GitHub Pages** and talks to a **Flask REST API** deployed on **Render** — a fully decoupled, production-style architecture.
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | Python, Flask |
-| Data processing | Pandas |
-| Frontend | HTML, CSS, JavaScript |
-| Charts | Chart.js 4.4 |
-| Data source | Excel (BOB_Source.xlsx) |
-| Hosting | GitHub Pages (frontend) |
+---
 
-## Features
+## 🏗️ Architecture
 
-- **5 KPI cards** — Total Cost, Avg TXN, Gross Profit %, Avg Uptime, Avg EBILL
-- **Cost breakdown** — Donut charts by CRA, AMC, Site Maintenance, Spare Replacement, UPS, VSAT
-- **Revenue by state** — Grouped bar chart for ATM / MHA / Monthly revenue across 11 states
-- **Transaction trends** — Financial vs Non-Financial TXN comparison by month
-- **Revenue vs Cost trend** — Multi-line chart across months
-- **ATM leaderboard** — Top / Bottom 10 ATMs ranked by gross profit
-- **Detail page** — Horizontal state breakdown, cost pie chart, transaction trend
-- **Live filters** — State, ATM type, and month filters update all charts simultaneously
-- **Graceful fallback** — Works in static mode if the backend is not running
+```
+┌─────────────────────────────────────────────────────────┐
+│                      User's Browser                      │
+│              GitHub Pages (HTML/CSS/JS)                  │
+└──────────────────────────┬──────────────────────────────┘
+                           │  HTTP requests
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│              Flask REST API · Render.com                 │
+│         atm-dashboard-api.onrender.com/api/*             │
+└──────────────────────────┬──────────────────────────────┘
+                           │  Pandas reads
+                           ▼
+                  BOB_Source.xlsx
+               (11,076 rows · 53 columns)
+```
 
-## API Endpoints
+---
+
+## ✨ Features
+
+| Feature | Description |
+|---------|-------------|
+| 📊 KPI Cards | Total Cost, Avg TXN, Gross Profit %, Avg Uptime, Avg EBILL |
+| 🍩 Cost Donuts | Breakdown by CRA, AMC, Site Maintenance, Spare Rep, UPS, VSAT |
+| 🗺️ Revenue by State | Grouped bar chart across 11 states |
+| 📈 Trend Analysis | Revenue vs Cost multi-line chart by month |
+| 🔁 Txn Comparison | Financial vs Non-Financial transactions by month |
+| 🏆 ATM Leaderboard | Top / Bottom 10 ATMs by gross profit |
+| 🔍 Live Filters | State, ATM type, and month — updates all charts simultaneously |
+| 📱 Detail Page | Horizontal state breakdown, cost pie, transaction trend |
+| ⚡ Smart Fallback | Works in static mode if backend is offline |
+
+---
+
+## 🌐 Live Links
+
+| | URL |
+|--|-----|
+| 📊 **Dashboard** | [nestorniloy.github.io/.../atm-dashboard.html](https://nestorniloy.github.io/atm-transaction-dashboard/Web%20dashboard/atm-dashboard.html) |
+| ⚙️ **API Root** | [atm-dashboard-api.onrender.com](https://atm-dashboard-api.onrender.com) |
+| 📡 **API Health** | [atm-dashboard-api.onrender.com/api/health](https://atm-dashboard-api.onrender.com/api/health) |
+
+---
+
+## ⚙️ API Reference
+
+Base URL: `https://atm-dashboard-api.onrender.com`
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/health` | Server status and row count |
-| GET | `/api/kpis` | KPI metrics (cost, profit %, uptime) |
-| GET | `/api/revenue` | Revenue by state — ATM, MHA, Monthly |
-| GET | `/api/transactions` | Fin vs Non-Fin transactions by month |
-| GET | `/api/costs` | Cost breakdown and monthly trend |
-| GET | `/api/filters` | Available filter options |
-| GET | `/api/atms` | Top / bottom ATMs by gross profit |
+| `GET` | `/` | API documentation and metadata |
+| `GET` | `/api/health` | Server status and row count |
+| `GET` | `/api/kpis` | KPI metrics — cost, profit %, uptime |
+| `GET` | `/api/revenue` | Revenue by state — ATM, MHA, Monthly |
+| `GET` | `/api/transactions` | Fin vs Non-Fin transactions by month |
+| `GET` | `/api/costs` | Cost breakdown and monthly trend |
+| `GET` | `/api/filters` | Available filter options |
+| `GET` | `/api/atms` | Top / bottom ATMs ranked by gross profit |
 
-All endpoints support query parameters: `?state=Assam&month=Aug&atm_type=Regular`
+### Query Parameters
+All endpoints accept:
+```
+?state=Assam          # Filter by state
+?month=Aug            # Filter by month (Mar, Aug, Nov, Dec)
+?atm_type=Regular     # Filter by ATM type
+```
 
-## Project Structure
+### Example Requests
+```bash
+# Get KPIs for Assam in August
+curl "https://atm-dashboard-api.onrender.com/api/kpis?state=Assam&month=Aug"
+
+# Get top 5 performing ATMs
+curl "https://atm-dashboard-api.onrender.com/api/atms?sort=desc&limit=5"
+
+# Get revenue breakdown for all states
+curl "https://atm-dashboard-api.onrender.com/api/revenue"
+```
+
+---
+
+## 🚀 Run Locally
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/nestorNiloy/atm-transaction-dashboard.git
+cd atm-transaction-dashboard
+
+# 2. Install backend dependencies
+cd backend
+pip install -r requirements.txt
+
+# 3. Start the API server
+py app.py
+# → Running at http://localhost:5000
+
+# 4. Open the dashboard
+# Open "Web dashboard/atm-dashboard.html" in your browser
+```
+
+---
+
+## 📁 Project Structure
 
 ```
 atm-transaction-dashboard/
 ├── Web dashboard/
-│   └── atm-dashboard.html      ← Frontend (open in browser)
+│   └── atm-dashboard.html      ← Frontend UI
 ├── backend/
-│   ├── app.py                  ← Flask REST API
+│   ├── app.py                  ← Flask REST API (7 endpoints)
 │   ├── BOB_Source.xlsx         ← Source dataset
-│   └── requirements.txt
-├── Dashboard screenshot.png
+│   └── requirements.txt        ← Python dependencies
+├── demo.gif                    ← Dashboard demo
+├── Dashboard screenshot.png    ← Static screenshot
 └── README.md
 ```
 
-## Run Locally
+---
 
-```bash
-# 1. Install backend dependencies
-cd backend
-pip install -r requirements.txt
+## 📊 Dataset
 
-# 2. Start the API server
-py app.py
-# → Running at http://localhost:5000
-
-# 3. Open the dashboard
-# Double-click Web dashboard/atm-dashboard.html in your file explorer
-```
-
-The dashboard auto-detects the API. When the backend is running, all filters query live data. When it's off, the dashboard loads pre-computed static data.
-
-## Dataset
-
-- **Source:** Bank of Baroda ATM operations data, FY 2024
+- **Source:** Bank of Baroda ATM operations, FY 2024
 - **Records:** 11,076 rows × 53 columns
-- **Coverage:** 11 states — Assam, Punjab, Jammu & Kashmir, Manipur, Tripura, Nagaland, Meghalaya, Mizoram, Arunachal Pradesh, Ladakh, Sikkim
 - **ATMs:** 2,790 unique machines
+- **States:** Assam, Punjab, Jammu & Kashmir, Manipur, Tripura, Nagaland, Meghalaya, Mizoram, Arunachal Pradesh, Ladakh, Sikkim
 - **Metrics:** Transaction volumes, revenue streams, cost categories, uptime, gross profit
 
 ---
 
-> Built by [@nestorNiloy](https://github.com/nestorNiloy)
+<div align="center">
+
+Built by [@nestorNiloy](https://github.com/nestorNiloy)
+
+</div>
