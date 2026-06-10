@@ -3,6 +3,8 @@
 <div align="center">
 
 **A full-stack analytics dashboard for Bank of Baroda ATM operations across Northeast India**
+> ⚠️ The API is hosted on Render's free tier and may take ~60 seconds 
+> to wake up on first visit.
 
 [![Live Dashboard](https://img.shields.io/badge/🚀%20Live%20Dashboard-GitHub%20Pages-2ea44f?style=for-the-badge)](https://nestorniloy.github.io/atm-transaction-dashboard/Web%20dashboard/atm-dashboard.html)
 [![Live API](https://img.shields.io/badge/⚙️%20Live%20API-Render-4fc3f7?style=for-the-badge)](https://atm-dashboard-api.onrender.com)
