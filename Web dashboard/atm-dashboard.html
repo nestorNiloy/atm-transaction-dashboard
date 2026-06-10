@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ATM Transaction Dashboard — BOB</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  /* ── Design tokens ─────────────────────────────────── */
+  :root {
+    --bg-deep:    #07111f;
+    --bg-card:    #0d1e30;
+    --bg-panel:   #0a1929;
+    --bg-glass:   rgba(13,30,48,0.85);
+    --border:     rgba(99,179,237,0.13);
+    --accent-1:   #4fc3f7;   /* sky blue  */
+    --accent-2:   #f48fb1;   /* rose      */
+    --accent-3:   #81c784;   /* green     */
+    --accent-4:   #ffb74d;   /* amber     */
+    --accent-5:   #ce93d8;   /* purple    */
+    --text-1:     #e8f4fd;
+    --text-2:     #8ab4cc;
+    --text-3:     #4a7a99;
+    --font-display: 'Segoe UI', system-ui, sans-serif;
+    --radius:     12px;
+    --radius-sm:  8px;
+    --shadow:     0 4px 24px rgba(0,0,0,0.45);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-1);
+    font-family: var(--font-display);
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Grid background texture ───────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      linear-gradient(rgba(79,195,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,195,247,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Layout shells ─────────────────────────────────── */
+  .app { position: relative; z-index: 1; padding: 20px; max-width: 1440px; margin: 0 auto; }
+
+  /* ── Top nav ───────────────────────────────────────── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; margin-bottom: 20px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(12px);
+  }
+  .topbar-title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; color: var(--text-1); }
+  .topbar-title span { color: var(--accent-1); }
+  .topbar-nav { display: flex; gap: 8px; align-items: center; }
+  .nav-btn {
+    padding: 6px 18px; border-radius: 20px; cursor: pointer; font-size: 13px;
+    border: 1px solid var(--border); background: transparent; color: var(--text-2);
+    transition: all .2s;
+  }
+  .nav-btn:hover, .nav-btn.active { background: var(--accent-1); color: #07111f; border-color: var(--accent-1); font-weight: 600; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-3); animation: pulse 2s infinite; display: inline-block; margin-right: 6px; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .api-status { font-size: 12px; color: var(--text-2); display:flex;align-items:center; }
+
+  /* ── Filters bar ───────────────────────────────────── */
+  .filters {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 12px 18px; margin-bottom: 20px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  }
+  .filter-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); margin-right: 4px; }
+  .filter-select {
+    padding: 6px 12px; border-radius: 6px;
+    background: var(--bg-panel); border: 1px solid var(--border);
+    color: var(--text-1); font-size: 13px; cursor: pointer; outline: none;
+  }
+  .filter-select:focus { border-color: var(--accent-1); }
+  .filter-chip {
+    padding: 5px 14px; border-radius: 16px; cursor: pointer; font-size: 12px;
+    border: 1px solid var(--border); background: transparent; color: var(--text-2); transition: all .18s;
+  }
+  .filter-chip.active { background: rgba(79,195,247,0.15); border-color: var(--accent-1); color: var(--accent-1); }
+  .filter-divider { width: 1px; height: 22px; background: var(--border); }
+
+  /* ── KPI strip ─────────────────────────────────────── */
+  .kpi-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px; }
+  .kpi-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    position: relative; overflow: hidden; transition: transform .2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); }
+  .kpi-card::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(79,195,247,0.05) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .kpi-bar { width: 3px; height: 100%; position: absolute; left: 0; top: 0; border-radius: 3px 0 0 3px; }
+  .kpi-value { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .kpi-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.8px; }
+  .kpi-delta { font-size: 11px; margin-top: 6px; }
+  .kpi-delta.up { color: var(--accent-3); }
+  .kpi-delta.down { color: var(--accent-2); }
+
+  /* ── Main grid ─────────────────────────────────────── */
+  .main-grid { display: grid; grid-template-columns: 320px 1fr; gap: 18px; margin-bottom: 18px; }
+  .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+  .bottom-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+
+  /* ── Cards ─────────────────────────────────────────── */
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text-1); letter-spacing: 0.2px; }
+  .card-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .card-badge {
+    font-size: 11px; padding: 3px 10px; border-radius: 10px;
+    background: rgba(79,195,247,0.1); color: var(--accent-1); border: 1px solid rgba(79,195,247,0.2);
+  }
+
+  /* ── Donut group ───────────────────────────────────── */
+  .donut-group { display: flex; flex-direction: column; gap: 14px; }
+  .donut-row { display: flex; align-items: center; gap: 14px; }
+  .donut-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+  .donut-wrap canvas { width: 80px !important; height: 80px !important; }
+  .donut-legend { display: flex; flex-direction: column; gap: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-2); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Revenue summary chips */
+  .rev-totals { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+  .rev-chip { background: var(--bg-panel); border-radius: 8px; padding: 10px 14px; text-align: center; border: 1px solid var(--border); }
+  .rev-chip-val { font-size: 18px; font-weight: 700; }
+  .rev-chip-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.7px; margin-top: 2px; }
+
+  /* Month chips */
+  .month-chips { display: flex; gap: 6px; margin-bottom: 16px; }
+
+  /* Table */
+  .atm-table { width: 100%; border-collapse: collapse; }
+  .atm-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; }
+  .atm-table td { padding: 7px 8px; font-size: 12px; border-bottom: 1px solid rgba(99,179,237,0.06); }
+  .atm-table tr:hover td { background: rgba(79,195,247,0.04); }
+  .profit-bar-wrap { background: rgba(255,255,255,0.07); border-radius: 3px; height: 4px; width: 80px; overflow: hidden; }
+  .profit-bar { height: 100%; border-radius: 3px; background: var(--accent-3); transition: width .5s; }
+
+  /* Tooltip */
+  .chart-tooltip { pointer-events: none; }
+
+  /* Loading skeleton */
+  .skeleton { background: linear-gradient(90deg, var(--bg-panel) 25%, rgba(79,195,247,0.05) 50%, var(--bg-panel) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 4px; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* Responsive */
+  @media (max-width: 1100px) { .kpi-strip { grid-template-columns: repeat(3,1fr); } }
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .bottom-grid, .bottom-grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">ATM Transaction <span>Dashboard</span></div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:2px;">Bank of Baroda · Northeast India Operations · FY 2024</div>
+    </div>
+    <div class="topbar-nav">
+      <div class="api-status"><span class="status-dot" id="apiDot"></span><span id="apiStatusText">Connecting to API…</span></div>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 10px;"></div>
+      <button class="nav-btn active" onclick="setPage('dashboard')">Dashboard</button>
+      <button class="nav-btn" onclick="setPage('detail')">Detail</button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <span class="filter-label">Filter by</span>
+    <select class="filter-select" id="stateFilter" onchange="applyFilters()">
+      <option value="All">All States</option>
+    </select>
+    <select class="filter-select" id="atmFilter" onchange="applyFilters()">
+      <option value="All">All ATM Types</option>
+    </select>
+    <div class="filter-divider"></div>
+    <span class="filter-label">Month</span>
+    <div id="monthChips" class="month-chips" style="margin:0;gap:6px;display:flex;"></div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-strip" id="kpiStrip">
+    <div class="kpi-card"><div class="kpi-bar" style="background:var(--accent-1)"></div><div class="kpi-value" id="kpi-cost" style="color:var(--accent-1)">—</div><div class="kpi-label">Total Cost</div></div>
+    <div class="kpi-card"><div class="kpi-bar" style="background:var(--accent-2)"></div><div class="kpi-value" id="kpi-txn" style="color:var(--accent-2)">—</div><div class="kpi-label">AVG Total TXN</div></div>
+    <div class="kpi-card"><div class="kpi-bar" style="background:var(--accent-3)"></div><div class="kpi-value" id="kpi-gp" style="color:var(--accent-3)">—</div><div class="kpi-label">Gross Profit %</div></div>
+    <div class="kpi-card"><div class="kpi-bar" style="background:var(--accent-4)"></div><div class="kpi-value" id="kpi-uptime" style="color:var(--accent-4)">—</div><div class="kpi-label">Avg Up Time</div></div>
+    <div class="kpi-card"><div class="kpi-bar" style="background:var(--accent-5)"></div><div class="kpi-value" id="kpi-ebill" style="color:var(--accent-5)">—</div><div class="kpi-label">Avg EBILL</div></div>
+  </div>
+
+  <!-- Dashboard page -->
+  <div id="page-dashboard">
+    <!-- Row 1: Cost Analysis + Revenue by State -->
+    <div class="main-grid">
+      <!-- Cost Analysis panel -->
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Cost Analysis</div><div class="card-sub">ATM Cost and Maintenance</div></div>
+          <span class="card-badge" id="selectedMonth">All Months</span>
+        </div>
+        <div class="donut-group" id="donutGroup">
+          <div class="donut-row">
+            <div class="donut-wrap"><canvas id="donut1"></canvas></div>
+            <div class="donut-legend" id="legend1"></div>
+          </div>
+          <div class="donut-row">
+            <div class="donut-wrap"><canvas id="donut2"></canvas></div>
+            <div class="donut-legend" id="legend2"></div>
+          </div>
+          <div class="donut-row">
+            <div class="donut-wrap"><canvas id="donut3"></canvas></div>
+            <div class="donut-legend" id="legend3"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue by State -->
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">ATM, MHA and Monthly Revenue</div><div class="card-sub">By region · All figures in ₹</div></div>
+        </div>
+        <div class="rev-totals" id="revTotals">
+          <div class="rev-chip"><div class="rev-chip-val" id="revAtm" style="color:var(--accent-1)">—</div><div class="rev-chip-label">ATM Revenue</div></div>
+          <div class="rev-chip"><div class="rev-chip-val" id="revMha" style="color:var(--accent-2)">—</div><div class="rev-chip-label">MHA Revenue</div></div>
+          <div class="rev-chip"><div class="rev-chip-val" id="revMonthly" style="color:var(--accent-3)">—</div><div class="rev-chip-label">Monthly Revenue</div></div>
+        </div>
+        <div style="height:240px;position:relative;"><canvas id="revenueChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 2: Txn by Month + Trend + Cost Trend -->
+    <div class="bottom-grid">
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Fin Txn and Non Fin Txn by Month</div><div class="card-sub">Financial vs non-financial transactions</div></div>
+        </div>
+        <div style="height:220px;position:relative;"><canvas id="txnChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Revenue vs Cost Trend</div><div class="card-sub">Monthly comparison across all states</div></div>
+        </div>
+        <div style="height:220px;position:relative;"><canvas id="trendChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 3: Top ATMs Table -->
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Top Performing ATMs</div><div class="card-sub">Ranked by gross profit · 2024</div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="filter-chip active" onclick="loadATMs('desc',this)">Top 10</button>
+          <button class="filter-chip" onclick="loadATMs('asc',this)">Bottom 10</button>
+        </div>
+      </div>
+      <table class="atm-table">
+        <thead>
+          <tr>
+            <th>#</th><th>ATM ID</th><th>State</th>
+            <th>Total Cost</th><th>Gross Profit</th><th>Gross %</th>
+            <th>Avg TXN</th><th>Performance</th>
+          </tr>
+        </thead>
+        <tbody id="atmTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Detail page -->
+  <div id="page-detail" style="display:none;">
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-header">
+        <div><div class="card-title">State-level Deep Dive</div><div class="card-sub">Select a state to see ATM-level breakdown</div></div>
+      </div>
+      <div style="height:300px;position:relative;"><canvas id="stateDetailChart"></canvas></div>
+    </div>
+    <div class="bottom-grid">
+      <div class="card">
+        <div class="card-header"><div><div class="card-title">Cost Breakdown by Category</div></div></div>
+        <div style="height:260px;position:relative;"><canvas id="costPieChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div><div class="card-title">Transaction Volume — Monthly Trend</div></div></div>
+        <div style="height:260px;position:relative;"><canvas id="txnTrendChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── State ─────────────────────────────────────────────── */
+const API_BASE = 'http://localhost:5000';
+let apiOnline = false;
+let currentFilters = { state: 'All', month: 'All', atm_type: 'All' };
+let charts = {};
+
+/* ── Static fallback data (from pre-processed export) ─── */
+const STATIC = {
+  kpis: { total_cost:296284039, avg_txn:178.89, gross_profit_pct:59.6, avg_uptime:91.9, avg_ebill:2214, total_atms:2790, total_gross_profit:342479497 },
+  revenue: {
+    by_state:[
+      {state:'Assam',atm_rev:278884831,mha_rev:17710323,monthly_rev:261174535},
+      {state:'Punjab',atm_rev:146109120,mha_rev:10532145,monthly_rev:135577007},
+      {state:'Jammu & Kashmir',atm_rev:52393069,mha_rev:3855347,monthly_rev:48537741},
+      {state:'Manipur',atm_rev:36452573,mha_rev:2303950,monthly_rev:34148616},
+      {state:'Tripura',atm_rev:25408740,mha_rev:1610683,monthly_rev:23798048},
+      {state:'Nagaland',atm_rev:25297209,mha_rev:1601889,monthly_rev:23695322},
+      {state:'Meghalaya',atm_rev:18045983,mha_rev:1156859,monthly_rev:16889122},
+      {state:'Mizoram',atm_rev:13926543,mha_rev:884777,monthly_rev:13041770},
+      {state:'Arunachal Pradesh',atm_rev:12166554,mha_rev:784812,monthly_rev:11381736},
+      {state:'Ladakh',atm_rev:3463708,mha_rev:260862,monthly_rev:3202843},
+      {state:'Sikkim',atm_rev:3441539,mha_rev:221647,monthly_rev:3219889},
+    ],
+    totals:{atm:615589869,mha:40923294,monthly:574666629}
+  },
+  transactions:{ by_month:[
+    {month:'Mar',fin:12090470,non_fin:2740235,total:14830705},
+    {month:'Aug',fin:11786904,non_fin:2600784,total:14387688},
+    {month:'Nov',fin:12183954,non_fin:2662850,total:14846804},
+    {month:'Dec',fin:13097939,non_fin:2991834,total:16089773},
+  ]},
+  costs:{
+    breakdown:{CRA:120704794,'ATM AMC':13845000,'Site Maint':2606995,'Spare Rep':967950,'UPS AMC':1392662,'VSAT AMC':2749056},
+    by_month:[
+      {month:'Mar',cost:73821901,revenue:151471321,profit:77649420},
+      {month:'Aug',cost:77232543,revenue:147790440,profit:70557897},
+      {month:'Nov',cost:71822992,revenue:153424882,profit:81601890},
+      {month:'Dec',cost:73406603,revenue:162903226,profit:89496623},
+    ]
+  },
+  atms:[
+    {atm_id:'TSFNK001539022',state:'Mizoram',total_cost:131525,gross_profit:415901,gross_pct:75.75,avg_txn:457},
+    {atm_id:'TSFTSK001539067',state:'Mizoram',total_cost:107654,gross_profit:411206,gross_pct:79.25,avg_txn:422},
+    {atm_id:'TSFTSK001539047',state:'Mizoram',total_cost:123634,gross_profit:408736,gross_pct:76.75,avg_txn:436},
+    {atm_id:'TSFTSK001539066',state:'Mizoram',total_cost:114210,gross_profit:394100,gross_pct:77.5,avg_txn:418},
+    {atm_id:'TSFTSK001539071',state:'Mizoram',total_cost:118900,gross_profit:388420,gross_pct:76.5,avg_txn:425},
+    {atm_id:'TSFTSK000146166',state:'Assam',total_cost:84632,gross_profit:248628,gross_pct:75.0,avg_txn:248},
+    {atm_id:'TSFTSK000104060',state:'Assam',total_cost:92364,gross_profit:310936,gross_pct:77.0,avg_txn:357},
+    {atm_id:'TSFTSK000983017',state:'Assam',total_cost:108492,gross_profit:205080,gross_pct:65.0,avg_txn:254},
+    {atm_id:'TSFTSK000119167',state:'Assam',total_cost:79356,gross_profit:236512,gross_pct:75.0,avg_txn:237},
+    {atm_id:'TSFTSO001365031',state:'Ladakh',total_cost:124496,gross_profit:184712,gross_pct:60.0,avg_txn:300},
+  ]
+};
+
+/* ── API helpers ───────────────────────────────────────── */
+async function apiFetch(endpoint) {
+  try {
+    const qs = new URLSearchParams();
+    if (currentFilters.state !== 'All') qs.set('state', currentFilters.state);
+    if (currentFilters.month !== 'All') qs.set('month', currentFilters.month);
+    if (currentFilters.atm_type !== 'All') qs.set('atm_type', currentFilters.atm_type);
+    const url = `${API_BASE}${endpoint}?${qs}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) throw new Error('bad response');
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/* ── Formatting helpers ────────────────────────────────── */
+function fmtM(v) {
+  if (v >= 1e9) return (v/1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return (v/1e6).toFixed(0) + 'M';
+  if (v >= 1e3) return (v/1e3).toFixed(1) + 'K';
+  return v.toLocaleString();
+}
+function fmtCurr(v) {
+  if (v >= 1e9) return '₹' + (v/1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '₹' + (v/1e6).toFixed(0) + 'M';
+  if (v >= 1e3) return '₹' + (v/1e3).toFixed(0) + 'K';
+  return '₹' + v.toLocaleString();
+}
+
+/* ── Chart defaults ────────────────────────────────────── */
+Chart.defaults.color = '#8ab4cc';
+Chart.defaults.borderColor = 'rgba(99,179,237,0.10)';
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+const tooltipOpts = {
+  backgroundColor: '#0d1e30',
+  borderColor: 'rgba(79,195,247,0.3)',
+  borderWidth: 1,
+  titleColor: '#e8f4fd',
+  bodyColor: '#8ab4cc',
+  padding: 10,
+  cornerRadius: 8,
+};
+
+/* ── Render KPIs ───────────────────────────────────────── */
+function renderKPIs(d) {
+  document.getElementById('kpi-cost').textContent    = fmtM(d.total_cost);
+  document.getElementById('kpi-txn').textContent     = d.avg_txn.toFixed(2);
+  document.getElementById('kpi-gp').textContent      = d.gross_profit_pct.toFixed(1) + '%';
+  document.getElementById('kpi-uptime').textContent  = d.avg_uptime.toFixed(1) + '%';
+  document.getElementById('kpi-ebill').textContent   = fmtM(d.avg_ebill);
+}
+
+/* ── Render Donuts ─────────────────────────────────────── */
+function mkDonut(canvasId, legendId, labels, values, colors) {
+  destroyChart(canvasId);
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  charts[canvasId] = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
+    options: {
+      cutout: '68%', responsive: false, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { ...tooltipOpts,
+        callbacks: { label: ctx => ` ${ctx.label}: ${fmtM(ctx.raw)}` }
+      }}
+    }
+  });
+  const leg = document.getElementById(legendId);
+  leg.innerHTML = labels.map((l,i)=>`
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${colors[i]}"></div>
+      <span>${l}</span>
+    </div>`).join('');
+}
+
+function renderDonuts(breakdown) {
+  const b = breakdown;
+  mkDonut('donut1','legend1',['CRA','ATM AMC'],[b.CRA,b['ATM AMC']],['#4fc3f7','#29b6f6']);
+  mkDonut('donut2','legend2',['Site Maint','Spare Rep'],[b['Site Maint'],b['Spare Rep']],['#f48fb1','#f06292']);
+  mkDonut('donut3','legend3',['UPS AMC','ATM AMC','VSAT AMC'],[b['UPS AMC'],b['ATM AMC'],b['VSAT AMC']],['#81c784','#4fc3f7','#ce93d8']);
+}
+
+/* ── Revenue by State chart ────────────────────────────── */
+function renderRevenue(data) {
+  const { by_state, totals } = data;
+  document.getElementById('revAtm').textContent     = fmtM(totals.atm);
+  document.getElementById('revMha').textContent     = fmtM(totals.mha);
+  document.getElementById('revMonthly').textContent = fmtM(totals.monthly);
+
+  const labels = by_state.map(d => d.state.replace(' & ', ' &\n'));
+  destroyChart('revenueChart');
+  const ctx = document.getElementById('revenueChart').getContext('2d');
+  charts['revenueChart'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'ATM Revenue',     data: by_state.map(d=>d.atm_rev),     backgroundColor: 'rgba(79,195,247,0.7)',  borderRadius: 3, barPercentage: 0.6 },
+        { label: 'MHA Revenue',     data: by_state.map(d=>d.mha_rev),     backgroundColor: 'rgba(244,143,177,0.7)', borderRadius: 3, barPercentage: 0.6 },
+        { label: 'Monthly Revenue', data: by_state.map(d=>d.monthly_rev), backgroundColor: 'rgba(129,199,132,0.6)', borderRadius: 3, barPercentage: 0.6 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position:'top', labels:{boxWidth:10,padding:16} }, tooltip: {...tooltipOpts, callbacks:{label:c=>` ${c.dataset.label}: ${fmtCurr(c.raw)}`}} },
+      scales: {
+        x: { grid:{display:false}, ticks:{font:{size:9}, maxRotation:40} },
+        y: { grid:{color:'rgba(99,179,237,0.07)'}, ticks:{callback:v=>fmtM(v)} }
+      }
+    }
+  });
+}
+
+/* ── Txn by Month chart ────────────────────────────────── */
+function renderTxn(data) {
+  const { by_month } = data;
+  destroyChart('txnChart');
+  const ctx = document.getElementById('txnChart').getContext('2d');
+  charts['txnChart'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: by_month.map(d=>d.month),
+      datasets: [
+        { label:'Fin Txn',     data:by_month.map(d=>d.fin),     backgroundColor:'rgba(79,195,247,0.75)',  borderRadius:4 },
+        { label:'Non Fin Txn', data:by_month.map(d=>d.non_fin), backgroundColor:'rgba(244,143,177,0.75)', borderRadius:4 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'top',labels:{boxWidth:10,padding:14}}, tooltip:{...tooltipOpts,callbacks:{label:c=>` ${c.dataset.label}: ${fmtM(c.raw)}`}} },
+      scales:{
+        x:{grid:{display:false}},
+        y:{grid:{color:'rgba(99,179,237,0.07)'},ticks:{callback:v=>fmtM(v)}}
+      }
+    }
+  });
+}
+
+/* ── Revenue vs Cost Trend ─────────────────────────────── */
+function renderTrend(by_month) {
+  destroyChart('trendChart');
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  charts['trendChart'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: by_month.map(d=>d.month),
+      datasets: [
+        { label:'Revenue', data:by_month.map(d=>d.revenue), borderColor:'#4fc3f7', backgroundColor:'rgba(79,195,247,0.08)', tension:0.4, pointRadius:5, pointBackgroundColor:'#4fc3f7', fill:true },
+        { label:'Cost',    data:by_month.map(d=>d.cost),    borderColor:'#f48fb1', backgroundColor:'rgba(244,143,177,0.06)', tension:0.4, pointRadius:5, pointBackgroundColor:'#f48fb1', fill:true },
+        { label:'Profit',  data:by_month.map(d=>d.profit),  borderColor:'#81c784', backgroundColor:'rgba(129,199,132,0.06)', tension:0.4, pointRadius:5, pointBackgroundColor:'#81c784', fill:true },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'top',labels:{boxWidth:10,padding:14}}, tooltip:{...tooltipOpts,callbacks:{label:c=>` ${c.dataset.label}: ${fmtCurr(c.raw)}`}} },
+      scales:{
+        x:{grid:{display:false}},
+        y:{grid:{color:'rgba(99,179,237,0.07)'},ticks:{callback:v=>fmtM(v)}}
+      }
+    }
+  });
+}
+
+/* ── ATM Table ─────────────────────────────────────────── */
+function renderATMs(atms) {
+  const maxProfit = Math.max(...atms.map(a=>a.gross_profit));
+  const tbody = document.getElementById('atmTableBody');
+  tbody.innerHTML = atms.map((a,i)=>`
+    <tr>
+      <td style="color:var(--text-3)">${i+1}</td>
+      <td style="font-family:monospace;font-size:11px;color:var(--accent-1)">${a.atm_id}</td>
+      <td style="color:var(--text-2)">${a.state}</td>
+      <td>${fmtCurr(a.total_cost)}</td>
+      <td style="color:var(--accent-3);font-weight:600">${fmtCurr(a.gross_profit)}</td>
+      <td style="color:${a.gross_pct>50?'var(--accent-3)':'var(--accent-2)'}">${a.gross_pct.toFixed(1)}%</td>
+      <td>${a.avg_txn.toFixed(0)}</td>
+      <td>
+        <div class="profit-bar-wrap">
+          <div class="profit-bar" style="width:${Math.min(100,(a.gross_profit/maxProfit)*100).toFixed(0)}%;background:${a.gross_pct>60?'var(--accent-3)':'var(--accent-4)'}"></div>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+/* ── Detail page charts ────────────────────────────────── */
+function renderDetailCharts(revenue, costs, txn) {
+  // State comparison bar
+  destroyChart('stateDetailChart');
+  const sd = document.getElementById('stateDetailChart').getContext('2d');
+  charts['stateDetailChart'] = new Chart(sd, {
+    type:'bar',
+    data:{
+      labels: revenue.by_state.map(d=>d.state),
+      datasets:[
+        { label:'ATM Revenue',  data:revenue.by_state.map(d=>d.atm_rev),  backgroundColor:'rgba(79,195,247,0.7)',  borderRadius:3 },
+        { label:'Total Cost',   data:revenue.by_state.map(d=>d.atm_rev * 0.42),  backgroundColor:'rgba(244,143,177,0.6)', borderRadius:3 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{legend:{position:'top',labels:{boxWidth:10}}, tooltip:{...tooltipOpts,callbacks:{label:c=>` ${c.dataset.label}: ${fmtCurr(c.raw)}`}}},
+      scales:{x:{grid:{color:'rgba(99,179,237,0.07)'},ticks:{callback:v=>fmtM(v)}},y:{grid:{display:false}}}
+    }
+  });
+
+  // Cost pie
+  destroyChart('costPieChart');
+  const cp = document.getElementById('costPieChart').getContext('2d');
+  const bd = costs.breakdown;
+  charts['costPieChart'] = new Chart(cp, {
+    type:'doughnut',
+    data:{
+      labels:Object.keys(bd),
+      datasets:[{data:Object.values(bd),backgroundColor:['#4fc3f7','#f48fb1','#81c784','#ffb74d','#ce93d8','#80cbc4'],borderWidth:0,hoverOffset:6}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'55%',
+      plugins:{legend:{position:'right',labels:{boxWidth:10,padding:12}}, tooltip:{...tooltipOpts,callbacks:{label:c=>` ${c.label}: ${fmtCurr(c.raw)}`}}}
+    }
+  });
+
+  // Txn trend line
+  destroyChart('txnTrendChart');
+  const tt = document.getElementById('txnTrendChart').getContext('2d');
+  charts['txnTrendChart'] = new Chart(tt, {
+    type:'line',
+    data:{
+      labels: txn.by_month.map(d=>d.month),
+      datasets:[
+        {label:'Total TXN',data:txn.by_month.map(d=>d.total),borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,0.1)',tension:0.4,pointRadius:6,fill:true},
+        {label:'Fin TXN',  data:txn.by_month.map(d=>d.fin),  borderColor:'#81c784',backgroundColor:'rgba(129,199,132,0.06)',tension:0.4,pointRadius:4,fill:true,borderDash:[4,3]},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{boxWidth:10}}, tooltip:{...tooltipOpts,callbacks:{label:c=>` ${c.dataset.label}: ${fmtM(c.raw)}`}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(99,179,237,0.07)'},ticks:{callback:v=>fmtM(v)}}}
+    }
+  });
+}
+
+/* ── Page nav ──────────────────────────────────────────── */
+function setPage(p) {
+  document.getElementById('page-dashboard').style.display = p==='dashboard' ? '' : 'none';
+  document.getElementById('page-detail').style.display    = p==='detail'    ? '' : 'none';
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase()===p));
+  if (p==='detail') renderDetailCharts(STATIC.revenue, STATIC.costs, STATIC.transactions);
+}
+
+/* ── Load ATMs ─────────────────────────────────────────── */
+async function loadATMs(sort='desc', btn=null) {
+  if (btn) {
+    document.querySelectorAll('.card .filter-chip').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  const data = await apiFetch(`/api/atms?limit=10&sort=${sort}`);
+  renderATMs(data ? data.atms : (sort==='desc' ? STATIC.atms : [...STATIC.atms].reverse()));
+}
+
+/* ── Apply filters ─────────────────────────────────────── */
+async function applyFilters() {
+  currentFilters.state    = document.getElementById('stateFilter').value;
+  currentFilters.atm_type = document.getElementById('atmFilter').value;
+  document.getElementById('selectedMonth').textContent = currentFilters.month === 'All' ? 'All Months' : currentFilters.month;
+
+  const [kpis, revenue, txn, costs] = await Promise.all([
+    apiFetch('/api/kpis'), apiFetch('/api/revenue'),
+    apiFetch('/api/transactions'), apiFetch('/api/costs')
+  ]);
+
+  renderKPIs(kpis || STATIC.kpis);
+  renderDonuts((costs || STATIC.costs).breakdown);
+  renderRevenue(revenue || STATIC.revenue);
+  renderTxn(txn || STATIC.transactions);
+  renderTrend((costs || STATIC.costs).by_month);
+  loadATMs('desc');
+}
+
+/* ── Month chip handler ────────────────────────────────── */
+function selectMonth(month, el) {
+  const chips = document.querySelectorAll('#monthChips .filter-chip');
+  chips.forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentFilters.month = month;
+  applyFilters();
+}
+
+/* ── Bootstrap ─────────────────────────────────────────── */
+async function init() {
+  // Populate month chips
+  const monthChips = document.getElementById('monthChips');
+  ['All','Mar','Aug','Nov','Dec'].forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-chip' + (m==='All' ? ' active' : '');
+    btn.textContent = m;
+    btn.onclick = () => selectMonth(m, btn);
+    monthChips.appendChild(btn);
+  });
+
+  // Check API health
+  try {
+    const r = await fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(2000) });
+    if (r.ok) {
+      apiOnline = true;
+      document.getElementById('apiDot').style.background = 'var(--accent-3)';
+      document.getElementById('apiStatusText').textContent = 'API Connected · 11,076 rows';
+      // Populate filter dropdowns from API
+      const filters = await apiFetch('/api/filters');
+      if (filters) {
+        const ss = document.getElementById('stateFilter');
+        ss.innerHTML = filters.states.map(s=>`<option>${s}</option>`).join('');
+        const at = document.getElementById('atmFilter');
+        at.innerHTML = filters.atm_types.map(t=>`<option>${t}</option>`).join('');
+      }
+    }
+  } catch {
+    document.getElementById('apiDot').style.background = 'var(--accent-4)';
+    document.getElementById('apiStatusText').textContent = 'Static mode · Start backend for live data';
+  }
+
+  // Render all
+  applyFilters();
+}
+
+init();
+</script>
+</body>
+</html>
