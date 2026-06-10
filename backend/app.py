@@ -62,7 +62,29 @@ def filter_df(state=None, month=None, atm_type=None):
 
 
 # ── API Routes ──────────────────────────────────────────────────────────────
-
+@app.route("/")
+def index():
+    return jsonify({
+        "name": "ATM Transaction Dashboard API",
+        "version": "1.0",
+        "author": "nestorNiloy",
+        "github": "https://github.com/nestorNiloy/atm-transaction-dashboard",
+        "live_dashboard": "https://nestorniloy.github.io/atm-transaction-dashboard/Web%20dashboard/atm-dashboard.html",
+        "endpoints": {
+            "health":       "/api/health",
+            "kpis":         "/api/kpis",
+            "revenue":      "/api/revenue",
+            "transactions": "/api/transactions",
+            "costs":        "/api/costs",
+            "filters":      "/api/filters",
+            "atms":         "/api/atms"
+        },
+        "dataset": {
+            "rows": 11076,
+            "states": 11,
+            "atms": 2790
+        }
+    })
 @app.route("/api/health")
 def health():
     return jsonify({"status": "ok", "rows": len(df_raw), "states": len(STATE_ORDER)})
